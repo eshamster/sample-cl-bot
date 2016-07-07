@@ -25,5 +25,10 @@
 
 (setf (ningle:route *app* "/" :method :POST)
       #'(lambda (params)
-          (with-params params (text trigger-word)
-            (format nil "~A" (trim-trigger-word trigger-word text)))))
+          (with-params params (text trigger-word user-name)
+            (jonathan:to-json
+             (list :|text| (format nil "Hello, ~A!! I'm a Lisp Alian!!~%You said \"~A\""
+                                   user-name
+                                   (trim-trigger-word trigger-word text))
+                   :|icon_url| "http://www.lisperati.com/lisplogo_alien_128.png" 
+                   :|username| "Lisp Alien"))))))
