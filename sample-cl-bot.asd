@@ -17,7 +17,8 @@
   :author "eshamster"
   :license "MIT"
   :depends-on (:clack
-               :ningle)
+               :ningle
+               :dexador)
   :components ((:module "src"
                 :components
                 ((:file "sample-cl-bot"))))
