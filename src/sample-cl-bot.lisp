@@ -6,6 +6,8 @@
 
 (defvar *app* (make-instance 'ningle:<app>))
 
+;; --- parameter modifier --- ;;
+
 (defun format-key (symbol)
   (ppcre:regex-replace "-"
                        (symbol-name symbol)
@@ -23,7 +25,18 @@
                                     (string-trim "\"" text)
                                     "")))
 
-;; TODO: cache hash
+(defun make-post-content (text)
+  (jonathan:to-json
+   (list :|text| text 
+         :|icon_url| "http://www.lisperati.com/lisplogo_alien_128.png" 
+         :|username| "Lisp Alien")))
+
+(defun extract-posted-text (params)
+  (with-params params (text trigger-word)
+    (trim-trigger-word trigger-word text)))
+
+;; --- settings manager --- ;;
+
 (defun get-setting-hash ()
   (let* ((path (make-pathname :directory (pathname-directory
                                           (asdf:system-source-file :sample-cl-bot))
@@ -39,20 +52,14 @@
 (defun get-incoming-hook-url ()
   (gethash "incoming_hook" (get-setting-hash)))
 
-(defun make-post-content (text)
-  (jonathan:to-json
-   (list :|text| text 
-         :|icon_url| "http://www.lisperati.com/lisplogo_alien_128.png" 
-         :|username| "Lisp Alien")))
-
-(defun extract-posted-text (params)
-  (with-params params (text trigger-word)
-    (trim-trigger-word trigger-word text)))
+;; --- routing --- ;;
 
 (setf (ningle:route *app* "/" :method :POST)
       #'(lambda (params)
-          (with-params params (user-name)
-            (make-post-content
-             (format nil "Hello, ~A!! I'm a Lisp Alian!!~%You said \"~A\""
-                     user-name
-                     (extract-posted-text params))))))
+          (dex:post (get-incoming-hook-url)
+                    :content
+                    (with-params params (user-name)
+                      (make-post-content
+                       (format nil "Hello, ~A!! I'm a Lisp Alian!!~%You said \"~A\""
+                               user-name
+                               (extract-posted-text params)))))))
