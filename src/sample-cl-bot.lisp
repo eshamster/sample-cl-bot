@@ -62,4 +62,5 @@
                       (make-post-content
                        (format nil "Hello, ~A!! I'm a Lisp Alian!!~%You said \"~A\""
                                user-name
-                               (extract-posted-text params)))))))
+                               (extract-posted-text params))))
+                    :headers '(("content-type" . "application/json")))))
