@@ -17,6 +17,7 @@
   :author "eshamster"
   :license "MIT"
   :depends-on (:alexandria
+               :anaphora
                :clack
                :ningle
                :dexador)

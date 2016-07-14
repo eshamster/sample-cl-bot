@@ -1,7 +1,8 @@
 (in-package :cl-user)
 (defpackage sample-cl-bot
   (:use :cl
-        :alexandria)
+        :alexandria
+        :anaphora)
   (:export *app*))
 (in-package :sample-cl-bot)
 
@@ -55,12 +56,51 @@
 
 ;; --- parser --- ;;
 
+(defvar *continuity-table* (make-hash-table :test 'equalp))
+
+(defun make-params-hash (params)
+  (with-params params (token channel-id user-id)
+    (format nil "token:~A-channel:~A-user:~A" token channel-id user-id)))
+
 (defun separate-command (text)
   (let ((splitted (ppcre:split "\\s" text :limit 2)))
     (cons (make-keyword (string-upcase (car splitted)))
           (cdr splitted))))
 
-(defun parse-input (text params)
+(defun make-number-game (answer)
+  (lambda (text params)
+    (declare (ignore params))
+    (if (not (or (string-equal "quit" text)
+                 (string-equal "exit" text))) 
+        (let ((number (parse-integer text :junk-allowed t)))
+          (if number
+              (cond ((= number answer) (make-post-content "That's right!! You Win!!"))
+                    ((< number answer) (values (make-post-content "It's small...")
+                                               (make-number-game answer)))
+                    ((> number answer) (values (make-post-content "It's large...")
+                                               (make-number-game answer)))
+                    (t (error "Illegal number-game state")))
+              (values (make-post-content "A number game is not ended. Please input a number.")
+                      (make-number-game answer))))
+        (make-post-content "You Lose!!"))))
+
+(defun start-number-game (text params)
+  (declare (ignore text))
+  (with-params params (user-name)
+    (values (make-post-content
+             (format nil "Hi, ~A. Let's start a number game!~%I think of a number. What's it? (1-32)"
+                     user-name))
+            (make-number-game (1+ (random 32))))))
+
+(defun parse-start-command (text params)
+  (let* ((separated (separate-command text))
+         (command (car separated))
+         (body (cadr separated)))
+    (case command
+      (:number-game (start-number-game body params))
+      (t (make-post-content (format nil "I don't know '~A' :cow2:" command))))))
+
+(defun parse-command (text params)
   (let* ((separated (separate-command text))
          (command (car separated))
          (body (cadr separated)))
@@ -68,7 +108,15 @@
       (:hello (with-params params (user-name)
                 (make-post-content (format nil "Hello ~A!!" user-name))))
       (:echo (make-post-content body))
+      (:start (parse-start-command body params))
       (t (make-post-content (format nil "I don't know the command '~A' :cow2:" command))))))
+
+(defun parse-input (text params)
+  (slet (gethash (make-params-hash params) *continuity-table*)
+    (multiple-value-bind (content continuity)
+        (if it (funcall it text params) (parse-command text params))
+      (setf it continuity)
+      content)))
 
 ;; --- routing --- ;;
 
