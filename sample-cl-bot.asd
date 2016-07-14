@@ -16,7 +16,8 @@
   :version "0.1"
   :author "eshamster"
   :license "MIT"
-  :depends-on (:clack
+  :depends-on (:alexandria
+               :clack
                :ningle
                :dexador)
   :components ((:module "src"
