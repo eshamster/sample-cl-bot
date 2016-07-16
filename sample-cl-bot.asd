@@ -22,8 +22,10 @@
                :ningle
                :dexador)
   :components ((:module "src"
+                :serial t
                 :components
-                ((:file "sample-cl-bot"))))
+                ((:file "utils")
+                 (:file "sample-cl-bot"))))
   :description "A sample bot by Common Lisp for Slack"
   :long-description
   #.(with-open-file (stream (merge-pathnames
