@@ -12,6 +12,7 @@
   :author "eshamster"
   :license "MIT"
   :depends-on (:sample-cl-bot
+               :jonathan
                :prove)
   :components ((:module "t"
                 :components
