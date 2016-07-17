@@ -8,14 +8,16 @@
 
 ;; --- parameter modifier --- ;;
 
-(defun format-key (symbol)
-  (ppcre:regex-replace "-"
-                       (symbol-name symbol)
-                       "_"))
+(defun format-key (key)
+  (ppcre:regex-replace-all "-"
+                           (if (symbolp key) (symbol-name key) key)
+                           "_"))
 
 (defmacro with-params (params bindings &body body)
   `(let ,(mapcar #'(lambda (name)
-                     `(,name (cdr (assoc (format-key ',name) ,params :test #'string-equal))))
+                     `(,name (cdr (assoc ',name ,params
+                                         :test #'(lambda (x y)
+                                                   (string-equal (format-key x) (format-key y)))))))
                  bindings)
      ,@body))
 

@@ -10,12 +10,13 @@
 
 (defsystem sample-cl-bot-test
   :author "eshamster"
-  :license ""
+  :license "MIT"
   :depends-on (:sample-cl-bot
                :prove)
   :components ((:module "t"
                 :components
-                ((:test-file "sample-cl-bot"))))
+                ((:test-file "utils")
+                 (:test-file "sample-cl-bot"))))
   :description "Test system for sample-cl-bot"
 
   :defsystem-depends-on (:prove-asdf)
