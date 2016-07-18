@@ -13,10 +13,12 @@
   :license "MIT"
   :depends-on (:sample-cl-bot
                :jonathan
+               :cl-ppcre
                :prove)
   :components ((:module "t"
                 :components
                 ((:test-file "utils")
+                 (:test-file "parser")
                  (:test-file "sample-cl-bot"))))
   :description "Test system for sample-cl-bot"
 
