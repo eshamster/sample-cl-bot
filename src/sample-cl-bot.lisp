@@ -28,13 +28,20 @@
     (jonathan:parse (apply #'concatenate (cons 'string read-list))
                     :as :hash-table)))
 
-(defun get-incoming-hook-url ()
-  (gethash "incoming_hook" (get-setting-hash)))
+(defun get-incoming-hook-url (params)
+  (with-params params (token)
+    (dolist (pair (gethash "pairs" (get-setting-hash)))
+      (let ((registered-token (gethash "token" pair))
+            (hook-url (gethash "incoming_hook" pair)))
+        (when (string= registered-token token)
+          (return-from get-incoming-hook-url hook-url))))
+    (format *error-output* "The token \"~A\" is not known" token)))
 
 ;; --- routing --- ;;
 
 (setf (ningle:route *app* "/" :method :POST)
       #'(lambda (params)
-          (dex:post (get-incoming-hook-url)
-                    :content (parse-input (extract-posted-text params) params)
-                    :headers '(("content-type" . "application/json")))))
+          (aif (get-incoming-hook-url params)
+               (dex:post it
+                         :content (parse-input (extract-posted-text params) params)
+                         :headers '(("content-type" . "application/json"))))))
