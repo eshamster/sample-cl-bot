@@ -6,8 +6,14 @@
   (:import-from :sample-cl-bot.utils
                 :with-params
                 :make-post-content)
+  (:import-from :sample-cl-bot.storage
+                :save-content
+                :get-content
+                :delete-content)
   (:export :parse-input))
 (in-package sample-cl-bot.parser)
+
+;; --- parser utilities --- ;;
 
 (defvar *continuity-table* (make-hash-table :test 'equalp))
 
@@ -19,6 +25,51 @@
   (let ((splitted (ppcre:split "\\s" text :limit 2)))
     (cons (make-keyword (string-upcase (car splitted)))
           (cdr splitted))))
+
+;; --- remember command --- ;;
+
+(defun register-pair-and-make-post (key value params)
+  (with-params params (user-name token channel-id)
+    (save-content :remember 
+                  (format nil "token:~A;channel-id:~A" token channel-id)
+                  key
+                  value)
+    (make-post-content
+     (format nil "@~A I remembered that '~A' is '~A'!" user-name key value))))
+
+(defun make-asking-key-fn ()
+  (lambda (text params)
+    (parse-remember-command text params)))
+
+(defun is-empty-string (str)
+  (ppcre:scan "^\\s*$" str))
+
+(defun make-asking-value-fn (key)
+  (lambda (text params)
+    (if (is-empty-string text)
+        (with-params params (user-name)
+          (values (make-post-content
+                   (format nil "@~A What is '~A'?" user-name key))
+                  (make-asking-value-fn key)))
+        (register-pair-and-make-post key text params))))
+
+(defun parse-remember-command (text params)
+  (cond ((is-empty-string text) ;; without key and without value
+         (values (with-params params (user-name)
+                   (make-post-content
+                    (format nil "@~A Please input a key name or a key-value pair (<key>=<value>)" user-name)))
+                 (make-asking-key-fn)))
+        (t (let* ((pair (ppcre:split "\\s*=\\s*" text :limit 2))
+                  (key (car pair))
+                  (value (cadr pair)))
+             (if value
+                 (register-pair-and-make-post key value params)
+                 (values (with-params params (user-name)
+                           (make-post-content
+                            (format nil "@~A What is '~A'?" user-name key)))
+                         (make-asking-value-fn key)))))))
+
+;; --- number game --- ;;
 
 (defun make-number-game (answer rest-chance)
   (lambda (text params)
@@ -57,6 +108,8 @@
                        user-name max chance))
               (make-number-game (1+ (random max)) chance)))))
 
+;; --- standard parsers --- ;;
+
 (defun parse-start-command (text params)
   (let* ((separated (separate-command text))
          (command (car separated))
@@ -73,6 +126,7 @@
       (:hello (with-params params (user-name)
                 (make-post-content (format nil "Hello ~A!!" user-name))))
       (:echo (make-post-content body))
+      (:remember (parse-remember-command body params))
       (:start (parse-start-command body params))
       (t (make-post-content (format nil "I don't know the command '~A' :cow2:" command))))))
 
