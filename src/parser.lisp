@@ -30,12 +30,14 @@
 
 (defun register-pair-and-make-post (key value params)
   (with-params params (user-name token channel-id)
-    (save-content :remember 
-                  (format nil "token:~A;channel-id:~A" token channel-id)
-                  key
-                  value)
-    (make-post-content
-     (format nil "@~A I remembered that '~A' is '~A'!" user-name key value))))
+    (let ((key (string-trim " " key))
+          (value (string-trim " " value)))
+      (save-content :remember 
+                    (format nil "token:~A;channel-id:~A" token channel-id)
+                    key
+                    value)
+      (make-post-content
+       (format nil "@~A I remembered that '~A' is '~A'!" user-name key value)))))
 
 (defun make-asking-key-fn ()
   (lambda (text params)
