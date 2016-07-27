@@ -28,12 +28,16 @@
 
 ;; --- remember command --- ;;
 
+(defun make-id-for-register (params)
+  (with-params params (token channel-id)
+    (format nil "token:~A;channel-id:~A" token channel-id)))
+
 (defun register-pair-and-make-post (key value params)
-  (with-params params (user-name token channel-id)
+  (with-params params (user-name)
     (let ((key (string-trim " " key))
           (value (string-trim " " value)))
       (save-content :remember 
-                    (format nil "token:~A;channel-id:~A" token channel-id)
+                    (make-id-for-register params)
                     key
                     value)
       (make-post-content
@@ -70,6 +74,17 @@
                            (make-post-content
                             (format nil "@~A What is '~A'?" user-name key)))
                          (make-asking-value-fn key)))))))
+
+;; --- get command --- ;;
+(defun parse-get-command (text params)
+  (make-post-content
+   (if (and text
+            (not (ppcre:scan "^\\s*$" text)))
+       (let ((key (string-trim " " text)))
+         (aif (get-content :remember (make-id-for-register params)  key)
+              (format nil "It's '~A'!" it)
+              (format nil "I have not remembered '~A'..." key)))
+       (format nil "What do you want to know? Please re-input with some key."))))
 
 ;; --- number game --- ;;
 
@@ -128,6 +143,7 @@
       (:hello (with-params params (user-name)
                 (make-post-content (format nil "Hello ~A!!" user-name))))
       (:echo (make-post-content body))
+      (:get (parse-get-command body params))
       (:remember (parse-remember-command body params))
       (:start (parse-start-command body params))
       (t (make-post-content (format nil "I don't know the command '~A' :cow2:" command))))))
