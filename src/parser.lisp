@@ -49,7 +49,8 @@
     (parse-remember-command text params)))
 
 (defun is-empty-string (str)
-  (ppcre:scan "^\\s*$" str))
+  (or (null str)
+      (ppcre:scan "^\\s*$" str)))
 
 (defun make-asking-value-fn (key)
   (lambda (text params)
@@ -79,13 +80,22 @@
 ;; --- get command --- ;;
 (defun parse-get-command (text params)
   (make-post-content
-   (if (and text
-            (not (ppcre:scan "^\\s*$" text)))
+   (if (not (is-empty-string text))
        (let ((key (string-trim " " text)))
          (aif (get-content :remember (make-id-for-register params)  key)
               (format nil "It's '~A'!" it)
               (format nil "I have not remembered '~A'..." key)))
        (format nil "What do you want to know? Please re-input with some key."))))
+
+;; --- forget command --- ;;
+(defun parse-forget-command (text params)
+  (make-post-content
+   (if (not (is-empty-string text))
+       (let ((key (string-trim " " text)))
+         (aif (delete-content :remember (make-id-for-register params) key)
+              (format nil "I forgetted '~A'..." key)
+              (format nil "I have not remembered '~A'..." key)))
+       (format nil "What do you want me to forget? Please re-input with some key."))) )
 
 ;; --- number game --- ;;
 
@@ -143,6 +153,7 @@
       (:hello (with-params params (user-name)
                 (make-post-content (format nil "Hello ~A!!" user-name))))
       (:echo (make-post-content body))
+      (:forget (parse-forget-command body params))
       (:get (parse-get-command body params))
       (:remember (parse-remember-command body params))
       (:start (parse-start-command body params))
