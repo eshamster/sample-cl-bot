@@ -6,7 +6,7 @@
 (in-package :sample-cl-bot-test.utils)
 
 
-(plan 3)
+(plan 4)
 
 (subtest "Test with-params"
   (let ((params '(("ab" . 1)
@@ -23,12 +23,25 @@
           (+ ab (if nothing 100 0)))
         1)))
 
-(subtest "Test make-post-content"
-  (ok (jonathan:parse (make-post-content "body")))
-  (let ((json (jonathan:parse (make-post-content "body") :as :hash-table)))
-    (is (gethash "text" json) "body")
+(defun validate-post-content (result expected-text)
+  (ok (jonathan:parse result))
+  (let ((json (jonathan:parse result :as :hash-table)))
+    (is (gethash "text" json) expected-text)
     (dolist (key '("icon_url" "username"))
       (ok (gethash key json)))))
+
+(subtest "Test make-post-content"
+  (validate-post-content (make-post-content "body") "body"))
+
+(subtest "Test make-post-to-mention"
+  (subtest "Test normal conditions"
+    (validate-post-content (make-post-to-mention "ikaruga" '(("user_name" . "rs2")))
+                           "@rs2 ikaruga"))
+  (subtest "Test error conditions"
+    (is-error (make-post-to-mention "ikaruga" nil)
+              'simple-error)
+    (is-error (make-post-to-mention "ikaruga" '(("not_include" . "a_user_name")))
+              'simple-error)))
 
 (subtest "Test extract-posted-text"
   (labels ((prove-it (text expected)

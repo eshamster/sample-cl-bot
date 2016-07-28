@@ -18,6 +18,7 @@
   :components ((:module "t"
                 :components
                 ((:test-file "utils")
+                 (:test-file "storage")
                  (:test-file "parser")
                  (:test-file "sample-cl-bot"))))
   :description "Test system for sample-cl-bot"

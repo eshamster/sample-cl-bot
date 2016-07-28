@@ -25,6 +25,7 @@
                 :serial t
                 :components
                 ((:file "utils")
+                 (:file "storage")
                  (:file "parser")
                  (:file "sample-cl-bot"))))
   :description "A sample bot by Common Lisp for Slack"
