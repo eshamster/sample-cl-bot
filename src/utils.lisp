@@ -3,6 +3,7 @@
   (:use :cl)
   (:export :with-params
            :make-post-content
+           :make-post-to-mention
            :extract-posted-text))
 (in-package :sample-cl-bot.utils)
 
@@ -26,6 +27,12 @@
    (list :|text| text 
          :|icon_url| "http://www.lisperati.com/lisplogo_alien_128.png" 
          :|username| "Lisp Alien")))
+
+(defun make-post-to-mention (text params)
+  (with-params params (user-name)
+    (if user-name
+        (make-post-content (format nil "@~A ~A" user-name text))
+        (error "The params doesn't include a user_name field"))))
 
 (defun trim-trigger-word (trigger-word text)
   (string-trim " "
