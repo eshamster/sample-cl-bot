@@ -5,7 +5,8 @@
         :anaphora)
   (:import-from :sample-cl-bot.utils
                 :with-params
-                :make-post-content)
+                :make-post-content
+                :make-post-to-mention)
   (:import-from :sample-cl-bot.storage
                 :save-content
                 :get-content
@@ -33,15 +34,15 @@
     (format nil "token:~A;channel-id:~A" token channel-id)))
 
 (defun register-pair-and-make-post (key value params)
-  (with-params params (user-name)
-    (let ((key (string-trim " " key))
-          (value (string-trim " " value)))
-      (save-content :remember 
-                    (make-id-for-register params)
-                    key
-                    value)
-      (make-post-content
-       (format nil "@~A I remembered that '~A' is '~A'!" user-name key value)))))
+  (let ((key (string-trim " " key))
+        (value (string-trim " " value)))
+    (save-content :remember 
+                  (make-id-for-register params)
+                  key
+                  value)
+    (make-post-to-mention
+     (format nil "I remembered that '~A' is '~A'!" key value)
+     params)))
 
 (defun make-asking-key-fn ()
   (lambda (text params)
@@ -53,26 +54,26 @@
 (defun make-asking-value-fn (key)
   (lambda (text params)
     (if (is-empty-string text)
-        (with-params params (user-name)
-          (values (make-post-content
-                   (format nil "@~A What is '~A'?" user-name key))
-                  (make-asking-value-fn key)))
+        (values (make-post-to-mention
+                 (format nil "What is '~A'?" key)
+                 params)
+                (make-asking-value-fn key))
         (register-pair-and-make-post key text params))))
 
 (defun parse-remember-command (text params)
   (cond ((is-empty-string text) ;; without key and without value
-         (values (with-params params (user-name)
-                   (make-post-content
-                    (format nil "@~A Please input a key name or a key-value pair (<key>=<value>)" user-name)))
+         (values (make-post-to-mention
+                  "Please input a key name or a key-value pair (<key>=<value>)"
+                  params)
                  (make-asking-key-fn)))
         (t (let* ((pair (ppcre:split "\\s*=\\s*" text :limit 2))
                   (key (car pair))
                   (value (cadr pair)))
              (if value
                  (register-pair-and-make-post key value params)
-                 (values (with-params params (user-name)
-                           (make-post-content
-                            (format nil "@~A What is '~A'?" user-name key)))
+                 (values (make-post-to-mention
+                          (format nil "What is '~A'?" key)
+                          params)
                          (make-asking-value-fn key)))))))
 
 ;; --- get command --- ;;
@@ -91,8 +92,7 @@
 (defun make-number-game (answer rest-chance)
   (lambda (text params)
     (labels ((make-message (str)
-               (with-params params (user-name)
-                 (make-post-content (format nil "@~A ~A" user-name str))))
+               (make-post-to-mention str params))
              (make-lose-message ()
                (make-message (format nil "You Lose!! (answer is ~D)" answer)))
              (make-false-return (is-small)
