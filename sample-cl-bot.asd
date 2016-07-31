@@ -25,6 +25,7 @@
                 :serial t
                 :components
                 ((:file "utils")
+                 (:file "kv-storage")
                  (:file "storage")
                  (:file "parser")
                  (:file "sample-cl-bot"))))
