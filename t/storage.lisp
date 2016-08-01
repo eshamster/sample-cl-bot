@@ -5,9 +5,7 @@
         :prove))
 (in-package :sample-cl-bot-test.storage)
 
-(defmacro with-test-storage (&body body)
-  `(let ((sample-cl-bot.storage::*memory-table* nil))
-     ,@body))
+(import 'sample-cl-bot-test.kv-storage::with-test-storage)
 
 (plan 2)
 

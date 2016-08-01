@@ -4,10 +4,12 @@
         :anaphora)
   (:export :save-content
            :delete-content
-           :get-content))
+           :get-content)
+  (:import-from :sample-cl-bot.kv-storage
+                :save-pairs
+                :delete-pairs
+                :get-pairs-list))
 (in-package sample-cl-bot.storage)
-
-(defvar *memory-table* nil)
 
 (defun check-identifier-types (kind id key)
   (check-type kind keyword)
@@ -23,35 +25,22 @@
                (is-same-content pair id key))
            pairs))
 
-;; TODO: exclusive lock
 (defun save-content (kind id key value)
   (check-identifier-types kind id key)
   (check-type value string)
-  (labels ((get-kind-storage () (assoc kind *memory-table*)))
-    (unless (get-kind-storage)
-      (push (cons kind nil) *memory-table*))
-    (let ((kind-storage (get-kind-storage)))
-      (aif (find-same-content (cdr kind-storage) id key)
-           (setf (cdr (assoc :value it)) value)
-           (push `((:id . ,id)
-                   (:key . ,key)
-                   (:value . ,value))
-                 (cdr kind-storage)))))
-  *memory-table*)
+  (save-pairs kind
+              `((:id . ,id)
+                (:key . ,key)
+                (:value . ,value))
+              '(:id :key)))
 
-;; TODO: shared lock
 (defun get-content (kind id key)
   (check-identifier-types kind id key)
-  (awhen (find-same-content (cdr (assoc kind *memory-table*)) id key)
-    (cdr (assoc :value it))))
+  (cdr (assoc :value
+              (car (get-pairs-list kind `((:id . ,id)
+                                          (:key . ,key)))))))
 
-;; TODO: exclusive lock
 (defun delete-content (kind id key)
   (check-identifier-types kind id key)
-  (let ((kind-storage (assoc kind *memory-table*)))
-    (awhen (find-same-content (cdr kind-storage) id key)
-      (progn (setf (cdr kind-storage)
-                   (delete-if #'(lambda (pair)
-                                  (is-same-content pair id key))
-                              (cdr kind-storage)))
-             it))))
+  (delete-pairs kind `((:id . ,id)
+                       (:key . ,key))))
