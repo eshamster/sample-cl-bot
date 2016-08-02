@@ -16,15 +16,6 @@
   (check-type id string)
   (check-type key string))
 
-(defun is-same-content (pair id key)
-  (and (string= (cdr (assoc :id pair)) id) 
-       (string= (cdr (assoc :key pair)) key)))
-
-(defun find-same-content (pairs id key)
-  (find-if #'(lambda (pair)
-               (is-same-content pair id key))
-           pairs))
-
 (defun save-content (kind id key value)
   (check-identifier-types kind id key)
   (check-type value string)
