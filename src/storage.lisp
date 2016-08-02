@@ -5,33 +5,38 @@
   (:export :save-content
            :delete-content
            :get-content)
+  (:import-from :sample-cl-bot.utils
+                :with-params)
   (:import-from :sample-cl-bot.kv-storage
                 :save-pairs
                 :delete-pairs
                 :get-pairs-list))
 (in-package sample-cl-bot.storage)
 
-(defun check-identifier-types (kind id key)
+(defun make-id (params)
+  (with-params params (token channel-id)
+    (format nil "token:~A;channel-id:~A" token channel-id)))
+
+(defun check-identifier-types (kind key)
   (check-type kind keyword)
-  (check-type id string)
   (check-type key string))
 
-(defun save-content (kind id key value)
-  (check-identifier-types kind id key)
+(defun save-content (kind params key value)
+  (check-identifier-types kind key)
   (check-type value string)
   (save-pairs kind
-              `((:id . ,id)
+              `((:id . ,(make-id params))
                 (:key . ,key)
                 (:value . ,value))
               '(:id :key)))
 
-(defun get-content (kind id key)
-  (check-identifier-types kind id key)
+(defun get-content (kind params key)
+  (check-identifier-types kind key)
   (cdr (assoc :value
-              (car (get-pairs-list kind `((:id . ,id)
+              (car (get-pairs-list kind `((:id . ,(make-id params))
                                           (:key . ,key)))))))
 
-(defun delete-content (kind id key)
-  (check-identifier-types kind id key)
-  (delete-pairs kind `((:id . ,id)
+(defun delete-content (kind params key)
+  (check-identifier-types kind key)
+  (delete-pairs kind `((:id . ,(make-id params))
                        (:key . ,key))))

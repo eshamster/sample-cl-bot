@@ -29,15 +29,11 @@
 
 ;; --- remember command --- ;;
 
-(defun make-id-for-register (params)
-  (with-params params (token channel-id)
-    (format nil "token:~A;channel-id:~A" token channel-id)))
-
 (defun register-pair-and-make-post (key value params)
   (let ((key (string-trim " " key))
         (value (string-trim " " value)))
     (save-content :remember 
-                  (make-id-for-register params)
+                  params
                   key
                   value)
     (make-post-to-mention
@@ -82,7 +78,7 @@
   (make-post-content
    (if (not (is-empty-string text))
        (let ((key (string-trim " " text)))
-         (aif (get-content :remember (make-id-for-register params)  key)
+         (aif (get-content :remember params key)
               (format nil "It's '~A'!" it)
               (format nil "I have not remembered '~A'..." key)))
        (format nil "What do you want to know? Please re-input with some key."))))
@@ -92,7 +88,7 @@
   (make-post-content
    (if (not (is-empty-string text))
        (let ((key (string-trim " " text)))
-         (aif (delete-content :remember (make-id-for-register params) key)
+         (aif (delete-content :remember params key)
               (format nil "I forgetted '~A'..." key)
               (format nil "I have not remembered '~A'..." key)))
        (format nil "What do you want me to forget? Please re-input with some key."))) )
