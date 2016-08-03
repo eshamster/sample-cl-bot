@@ -32,9 +32,11 @@
 
 (defun get-content (kind params key)
   (check-identifier-types kind key)
-  (cdr (assoc :value
-              (car (get-pairs-list kind `((:id . ,(make-id params))
-                                          (:key . ,key)))))))
+  (mapcar #'(lambda (pairs)
+              (cons (cdr (assoc :key pairs))
+                    (cdr (assoc :value pairs))))
+          (get-pairs-list kind `((:id . ,(make-id params))
+                                 (:key . ,key)))))
 
 (defun delete-content (kind params key)
   (check-identifier-types kind key)

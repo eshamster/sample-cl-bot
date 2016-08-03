@@ -79,7 +79,7 @@
    (if (not (is-empty-string text))
        (let ((key (string-trim " " text)))
          (aif (get-content :remember params key)
-              (format nil "It's '~A'!" it)
+              (format nil "It's '~A'!" (cdar it))
               (format nil "I have not remembered '~A'..." key)))
        (format nil "What do you want to know? Please re-input with some key."))))
 
