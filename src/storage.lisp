@@ -5,42 +5,40 @@
   (:export :save-content
            :delete-content
            :get-content)
+  (:import-from :sample-cl-bot.utils
+                :with-params)
   (:import-from :sample-cl-bot.kv-storage
                 :save-pairs
                 :delete-pairs
                 :get-pairs-list))
 (in-package sample-cl-bot.storage)
 
-(defun check-identifier-types (kind id key)
+(defun make-id (params)
+  (with-params params (token channel-id)
+    (format nil "token:~A;channel-id:~A" token channel-id)))
+
+(defun check-identifier-types (kind key)
   (check-type kind keyword)
-  (check-type id string)
   (check-type key string))
 
-(defun is-same-content (pair id key)
-  (and (string= (cdr (assoc :id pair)) id) 
-       (string= (cdr (assoc :key pair)) key)))
-
-(defun find-same-content (pairs id key)
-  (find-if #'(lambda (pair)
-               (is-same-content pair id key))
-           pairs))
-
-(defun save-content (kind id key value)
-  (check-identifier-types kind id key)
+(defun save-content (kind params key value)
+  (check-identifier-types kind key)
   (check-type value string)
   (save-pairs kind
-              `((:id . ,id)
+              `((:id . ,(make-id params))
                 (:key . ,key)
                 (:value . ,value))
               '(:id :key)))
 
-(defun get-content (kind id key)
-  (check-identifier-types kind id key)
-  (cdr (assoc :value
-              (car (get-pairs-list kind `((:id . ,id)
-                                          (:key . ,key)))))))
+(defun get-content (kind params key)
+  (check-identifier-types kind key)
+  (mapcar #'(lambda (pairs)
+              (cons (cdr (assoc :key pairs))
+                    (cdr (assoc :value pairs))))
+          (get-pairs-list kind `((:id . ,(make-id params))
+                                 (:key . ,key)))))
 
-(defun delete-content (kind id key)
-  (check-identifier-types kind id key)
-  (delete-pairs kind `((:id . ,id)
+(defun delete-content (kind params key)
+  (check-identifier-types kind key)
+  (delete-pairs kind `((:id . ,(make-id params))
                        (:key . ,key))))
