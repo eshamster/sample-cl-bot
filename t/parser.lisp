@@ -5,6 +5,8 @@
         :prove))
 (in-package :sample-cl-bot-test.parser)
 
+;; --- utils --- ;;
+
 (defun validate-json (json-str)
   (let ((json-hash (jonathan:parse json-str :as :hash-table)))
     (when (every #'(lambda (target)
@@ -19,9 +21,12 @@
                  '("text" "icon_url" "username"))
       json-hash)))
 
+(import 'sample-cl-bot-test.kv-storage::with-test-storage)
+
 (defmacro with-fresh-env (&body body)
-  `(let ((sample-cl-bot.parser::*continuity-table* (make-hash-table)))
-     ,@body))
+  `(let ((sample-cl-bot.parser::*continuity-table* (make-hash-table :test 'equalp)))
+     (with-test-storage
+       ,@body)))
 
 (defvar *trigger* "alien:")
 (defvar *user* "test-user")
@@ -44,7 +49,15 @@
                expected-words))
     (format t "~8@A<output-text> ~A" "" ret-text)))
 
-(plan 1)
+(defun exec-simple-test-set (&rest rest)
+  (assert (evenp (length rest)))
+  (when rest
+    (exec-simple-test (car rest) (cadr rest))
+    (apply #'exec-simple-test-set (cddr rest))))
+
+;; --- tests --- ;;
+
+(plan 2)
 
 (with-fresh-env
   (subtest "Test simple commands"
@@ -55,5 +68,28 @@
       (exec-simple-test "echo say something" '("^say something$")))
     (subtest "Test a not-exist command"
       (exec-simple-test "not-exist test" '("not-exist" "don't know")))))
+
+(subtest "Test commands about key-value store"
+  (let ((not-remembered "have not remembered"))
+    (with-fresh-env
+      (exec-simple-test-set
+       "get rs2" (list not-remembered "rs2")
+       "remember" '("input" "key" "value")
+       "rs2" '("What")
+       "ikaruga" '("rs2" "ikaruga")
+       "get rs2" '("ikaruga")
+       ;; update
+       "remember rs2 = black and white" '("rs2" "black and white")
+       "get rs2" '("black and white")
+       ;; add a next item
+       "remember abc" '("What")
+       "xyz" '("abc" "xyz")
+       "get rs2" '("black and white")
+       "get abc" '("xyz")
+       ;; delete
+       "forget" '("What")
+       "forget not-exist-item" (list not-remembered)
+       "forget abc" '("forgetted" "abc")
+       "get abc" (list not-remembered)))))
 
 (finalize)
