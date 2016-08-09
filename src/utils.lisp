@@ -4,7 +4,8 @@
   (:export :with-params
            :make-post-content
            :make-post-to-mention
-           :extract-posted-text))
+           :extract-posted-text
+           :find-all-nodes))
 (in-package :sample-cl-bot.utils)
 
 ;; --- parameter modifier --- ;;
@@ -43,3 +44,25 @@
 (defun extract-posted-text (params)
   (with-params params (text trigger-word)
     (trim-trigger-word trigger-word text)))
+
+(defun find-all-nodes (predicate tree)
+  (labels ((loop-list (func list)
+              "This can do with a not nil-ended list"
+              (when list
+                (let ((head (car list))
+                      (rest (cdr list)))
+                  (funcall func head)
+                  (if (listp rest)
+                      (loop-list func rest)
+                      (funcall func rest)))))
+           (rec (tree)
+             (let (result)
+               (when (funcall predicate tree)
+                 (push tree result))
+               (when (listp tree)
+                 (loop-list
+                    #'(lambda (node)
+                        (setf result (append (rec node) result)))
+                    tree))
+               result)))
+    (rec tree)))
