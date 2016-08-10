@@ -75,12 +75,15 @@
                          (make-asking-value-fn key)))))))
 
 ;; --- get command --- ;;
+(defun get-remembered-value (key params)
+  (cdar (get-content :remember params key)))
+
 (defun parse-get-command (text params)
   (make-post-content
    (if (not (is-empty-string text))
        (let ((key (string-trim " " text)))
-         (aif (get-content :remember params key)
-              (format nil "It's '~A'!" (cdar it))
+         (aif (get-remembered-value key params)
+              (format nil "It's '~A'!" it)
               (format nil "I have not remembered '~A'..." key)))
        (format nil "What do you want to know? Please re-input with some key."))))
 
@@ -150,6 +153,14 @@
                                       city-rss)))))
     result))
 
+(defun get-city-id (text params)
+  (let ((cities-list (get-cities-list)))
+    (aif (cdr (assoc text cities-list :test #'string=))
+         it
+         (let ((remembered-name (get-remembered-value text params)))
+           (when remembered-name
+             (cdr (assoc remembered-name cities-list :test #'string=)))))))
+
 (defun get-raw-weather-forecast (id)
   (jonathan:parse
    (dex:get (format nil "http://weather.livedoor.com/forecast/webservice/json/v1?city=~A" id))
@@ -170,9 +181,10 @@
             (extract-json-data parsed "link"))))
 
 (defun parse-weather-forecast (text params)
+  "'text' is a city name or a keyword that is remembered by the 'remember' command"
   (if text
-      (aif (assoc text (get-cities-list) :test #'string=)
-           (make-post-content (make-forecats-text (cdr it)))
+      (aif (get-city-id text params)
+           (make-post-content (make-forecats-text it))
            (make-post-to-mention
             (format nil "I don't know the city '~A'...~%Please see http://weather.livedoor.com/forecast/rss/primary_area.xml" text)
             params))
