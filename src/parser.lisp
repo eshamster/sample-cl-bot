@@ -169,12 +169,14 @@
             (extract-json-data parsed "description" "text")
             (extract-json-data parsed "link"))))
 
-(defun parse-weather-forecast (text params) 
-  (aif (assoc text (get-cities-list) :test #'string=)
-       (make-post-content (make-forecats-text (cdr it)))
-       (make-post-to-mention
-        (format nil "I don't know the city '~A'...~%Please see http://weather.livedoor.com/forecast/rss/primary_area.xml" text)
-        params)))
+(defun parse-weather-forecast (text params)
+  (if text
+      (aif (assoc text (get-cities-list) :test #'string=)
+           (make-post-content (make-forecats-text (cdr it)))
+           (make-post-to-mention
+            (format nil "I don't know the city '~A'...~%Please see http://weather.livedoor.com/forecast/rss/primary_area.xml" text)
+            params))
+      (make-post-to-mention "Please input a city name" params)))
 
 ;; --- standard parsers --- ;;
 
