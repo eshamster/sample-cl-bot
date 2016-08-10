@@ -6,7 +6,8 @@
   (:import-from :sample-cl-bot.utils
                 :with-params
                 :make-post-content
-                :make-post-to-mention)
+                :make-post-to-mention
+                :find-all-nodes)
   (:import-from :sample-cl-bot.storage
                 :save-content
                 :get-content
@@ -131,6 +132,50 @@
                        user-name max chance))
               (make-number-game (1+ (random max)) chance)))))
 
+;; --- parse weather forecast --- ;;
+(let ((result nil))
+  (defun get-cities-list ()
+    (unless result
+      (let ((city-rss (cxml:parse (dex:get "http://weather.livedoor.com/forecast/rss/primary_area.xml")
+                                  (cxml-xmls:make-xmls-builder))))
+        (setf result
+              (mapcar #'(lambda (city-info)
+                          (let ((data (cadr city-info)))
+                            (cons (cadr (assoc "title" data :test #'string=))
+                                  (cadr (assoc "id" data :test #'string=)))))
+                      (find-all-nodes #'(lambda (node)
+                                          (and (listp node)
+                                               (stringp (car node))
+                                               (string= (car node) "city")))
+                                      city-rss)))))
+    result))
+
+(defun get-raw-weather-forecast (id)
+  (jonathan:parse
+   (dex:get (format nil "http://weather.livedoor.com/forecast/webservice/json/v1?city=~A" id))
+   :as :alist))
+
+(defun extract-json-data (parsed-json-alist &rest keys)
+  "Note: This assumes that each key is contained only one"
+  (if keys
+      (apply #'extract-json-data
+             (cdr (assoc (car keys) parsed-json-alist :test #'string=))
+             (cdr keys))
+      parsed-json-alist))
+
+(defun make-forecats-text (id)
+  (let ((parsed (get-raw-weather-forecast id)))
+    (format nil "~A~%~A"
+            (extract-json-data parsed "description" "text")
+            (extract-json-data parsed "link"))))
+
+(defun parse-weather-forecast (text params) 
+  (aif (assoc text (get-cities-list) :test #'string=)
+       (make-post-content (make-forecats-text (cdr it)))
+       (make-post-to-mention
+        (format nil "I don't know the city '~A'...~%Please see http://weather.livedoor.com/forecast/rss/primary_area.xml" text)
+        params)))
+
 ;; --- standard parsers --- ;;
 
 (defun parse-start-command (text params)
@@ -153,6 +198,7 @@
       (:get (parse-get-command body params))
       (:remember (parse-remember-command body params))
       (:start (parse-start-command body params))
+      ((:weather :wf) (parse-weather-forecast body params))
       (t (make-post-content (format nil "I don't know the command '~A' :cow2:" command))))))
 
 (defun parse-input (text params)

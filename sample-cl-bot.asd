@@ -20,6 +20,7 @@
                :anaphora
                :clack
                :ningle
+               :cxml
                :dexador)
   :components ((:module "src"
                 :serial t
