@@ -176,9 +176,18 @@
 
 (defun make-forecats-text (id)
   (let ((parsed (get-raw-weather-forecast id)))
-    (format nil "~A~%~A"
-            (extract-json-data parsed "description" "text")
-            (extract-json-data parsed "link"))))
+    (with-output-to-string (out)
+      (dolist (day-data (extract-json-data parsed "forecasts"))
+        (format out "~A: ~A"
+                (extract-json-data day-data "date")
+                (extract-json-data day-data "image" "title"))
+        (labels ((get-celsius (min-or-max)
+                   (extract-json-data day-data "temperature" min-or-max "celsius")))
+          (awhen (get-celsius "min")
+            (format out " (~A-~AC)" (get-celsius "min") (get-celsius "max"))))
+        (format out "~%"))
+      (format out "~A" 
+              (extract-json-data parsed "link")))))
 
 (defun parse-weather-forecast (text params)
   "'text' is a city name or a keyword that is remembered by the 'remember' command"
