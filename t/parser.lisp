@@ -57,7 +57,7 @@
 
 ;; --- tests --- ;;
 
-(plan 2)
+(plan 3)
 
 (with-fresh-env
   (subtest "Test simple commands"
@@ -91,5 +91,18 @@
        "forget not-exist-item" (list not-remembered)
        "forget abc" '("forgetted" "abc")
        "get abc" (list not-remembered)))))
+
+(with-fresh-env
+  (subtest "Test weather command"
+    (let ((valid-checker '("[0-9]{4}.[0-9]{2}.[0-9]{2}" "http"))
+          (invalid-checker '("don't know" "see" "http")))
+      (exec-simple-test-set
+       "weather not-exist-city" invalid-checker
+       "weather 東京" valid-checker
+       "wf 東京" valid-checker
+       ;; check if the remembered word is accepted
+       "wf tk" invalid-checker
+       "remember tk=東京" '("tk" "東京")
+       "wf tk" valid-checker))))
 
 (finalize)

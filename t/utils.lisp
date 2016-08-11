@@ -6,7 +6,7 @@
 (in-package :sample-cl-bot-test.utils)
 
 
-(plan 4)
+(plan 5)
 
 (subtest "Test with-params"
   (let ((params '(("ab" . 1)
@@ -52,5 +52,12 @@
     (prove-it "trig:   body  " "body")
     (prove-it " body  " "body")
     (prove-it " body trig: body" "body trig: body")))
+
+(subtest "Test find-all-nodes"
+  (is (sort (find-all-nodes #'(lambda (x)
+                                (and (numberp x) (evenp x)))
+                            '((1 12 (3 4 . 6)) 2 (8 ((9 10)))))
+            #'<)
+      '(2 4 6 8 10 12)))
 
 (finalize)
