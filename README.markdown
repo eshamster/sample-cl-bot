@@ -6,7 +6,7 @@ A sample bot by Common Lisp for Slack
 
 ```lisp
 > (ql:quickload :sample-cl-bot)
-> (clack:claclup sample-cl-bot:*app* :port <port number>)
+> (clack:clackup sample-cl-bot:*app* :port <port number>)
 ```
 
 ## Installation
